@@ -1,0 +1,14 @@
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\bin\Debug\net8.0\Projecto Maze runner.exe
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\bin\Debug\net8.0\Projecto Maze runner.deps.json
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\bin\Debug\net8.0\Projecto Maze runner.runtimeconfig.json
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\bin\Debug\net8.0\Projecto Maze runner.dll
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\bin\Debug\net8.0\Projecto Maze runner.pdb
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\obj\Debug\net8.0\Projecto Maze runner.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\obj\Debug\net8.0\Projecto Maze runner.AssemblyInfoInputs.cache
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\obj\Debug\net8.0\Projecto Maze runner.AssemblyInfo.cs
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\obj\Debug\net8.0\Projecto Maze runner.csproj.CoreCompileInputs.cache
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\obj\Debug\net8.0\Projecto Maze runner.dll
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\obj\Debug\net8.0\refint\Projecto Maze runner.dll
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\obj\Debug\net8.0\Projecto Maze runner.pdb
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\obj\Debug\net8.0\Projecto Maze runner.genruntimeconfig.cache
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\obj\Debug\net8.0\ref\Projecto Maze runner.dll
