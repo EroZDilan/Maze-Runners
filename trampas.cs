@@ -1,33 +1,74 @@
 public static class TrampaManager
 {
-    private static Dictionary<(int, int), int> jugadoresInvalidados = new Dictionary<(int, int), int>();
+    private static Dictionary<Ficha, int> jugadoresInvalidados = new Dictionary<Ficha, int>();
     private static Dictionary<(int, int), (int, int)> conexionesTrampa3 = new Dictionary<(int, int), (int, int)>();
 
-    public static void ManejarTrampa(Ficha ficha, Casilla casilla, Tablero tablero)
+    public static int ManejarTrampa(Ficha ficha, Casilla casilla, Tablero tablero, GestorTurnos gestor)
     {
-        switch (casilla.Tipo)
-        {
-            case TipoCasilla.Trampa1:
-                InvalidarJugador(ficha);
-                Console.WriteLine($"{ficha.Nombre} ha caído en una trampa de nivel 1. Pierde el siguiente turno!");
-                casilla.Tipo = TipoCasilla.Vacia; // La trampa se destruye al activarse
-                break;
+            if(ficha is CaballeroDeLaMuerte)
+            {
+                Console.WriteLine($"EL {ficha.Nombre} es inmune a las trampas");
+                return 1;
+            }
 
-            case TipoCasilla.Trampa2:
-                RegresarAlInicio(ficha, tablero);
-                Console.WriteLine($"{ficha.Nombre} ha caído en una trampa de nivel 2. ¡Regresa al inicio!");
-                casilla.Tipo = TipoCasilla.Vacia; // La trampa se destruye al activarse
-                break;
+            switch (casilla.Tipo)
+            {
+                case TipoCasilla.Trampa1:
+                    InvalidarJugador(ficha);
+                    Console.WriteLine($"{ficha.Nombre} ha caído en una trampa de nivel 1. ¡Pierde el siguiente turno!");
+                    casilla.Tipo = TipoCasilla.Vacia;
+                    gestor.FinalizarTurnoInmediato();
+                    return 0;
 
-            case TipoCasilla.Trampa3:
-                TeletransportarAOtraTrampa3(ficha, casilla, tablero);
-                break;
+                case TipoCasilla.Trampa2:
+                    // Volver al inicio
+                    tablero.ObtenerCasilla(ficha.PosX, ficha.PosY).EstaOcupada = false;
+                    var posInicial = gestor.posicionesIniciales[ficha];
+                    ficha.PosX = posInicial.Item1;
+                    ficha.PosY = posInicial.Item2;
+                    tablero.ObtenerCasilla(ficha.PosX, ficha.PosY).EstaOcupada = true;
+                    Console.WriteLine($"{ficha.Nombre} ha caído en una trampa de nivel 2. ¡Regresa al inicio!");
+                    casilla.Tipo = TipoCasilla.Vacia;
+                    return -1;
+
+                case TipoCasilla.Trampa3:
+                    // Buscar otra trampa nivel 3
+                    List<(int x, int y)> trampasTipo3 = new List<(int x, int y)>();
+                    for (int i = 0; i < tablero.Tamaño; i++)
+                    {
+                        for (int j = 0; j < tablero.Tamaño; j++)
+                        {
+                            if (tablero.ObtenerCasilla(i, j).Tipo == TipoCasilla.Trampa3 &&
+                                (i != ficha.PosX || j != ficha.PosY))
+                            {
+                                trampasTipo3.Add((i, j));
+                            }
+                        }
+                    }
+
+                    if (trampasTipo3.Count > 0)
+                    {
+                        Random random = new Random();
+                        var destino = trampasTipo3[random.Next(trampasTipo3.Count)];
+                        tablero.ObtenerCasilla(ficha.PosX, ficha.PosY).EstaOcupada = false;
+                        ficha.PosX = destino.x;
+                        ficha.PosY = destino.y;
+                        tablero.ObtenerCasilla(ficha.PosX, ficha.PosY).EstaOcupada = true;
+                        gestor.victoryManager.IncrementarContadorTrampas3(ficha);
+                        Console.WriteLine($"{ficha.Nombre} ha caído en una trampa de nivel 3. ¡Se teletransporta a otra trampa!");
+                    }
+                    return -1;
+
+                default:
+                    System.Console.WriteLine("eros");
+                    return -1;
+            }
         }
-    }
+    
 
     private static void InvalidarJugador(Ficha ficha)
     {
-        jugadoresInvalidados[(ficha.PosX, ficha.PosY)] = 1; // Durará 1 turno
+        jugadoresInvalidados[ficha] = 1; // Durará 1 turno
     }
 
     private static void RegresarAlInicio(Ficha ficha, Tablero tablero)
@@ -49,9 +90,11 @@ public static class TrampaManager
 
         // Ocupar la nueva casilla
         tablero.ObtenerCasilla(ficha.PosX, ficha.PosY).EstaOcupada = true;
+
+        System.Console.WriteLine("karla");
     }
 
-    private static void TeletransportarAOtraTrampa3(Ficha ficha, Casilla casillaActual, Tablero tablero)
+    private static void TeletransportarAOtraTrampa3(Ficha ficha, Casilla casilla, Tablero tablero)
     {
         // Buscar otra trampa nivel 3 en el tablero
         List<(int, int)> trampasTipo3 = new List<(int, int)>();
@@ -61,7 +104,7 @@ public static class TrampaManager
             for (int j = 0; j < tablero.Tamaño; j++)
             {
                 if (tablero.ObtenerCasilla(i, j).Tipo == TipoCasilla.Trampa3 &&
-                    (i != casillaActual.PosX || j != casillaActual.PosY))
+                    (i != casilla.PosX || j != casilla.PosY))
                 {
                     trampasTipo3.Add((i, j));
                 }
@@ -90,19 +133,29 @@ public static class TrampaManager
 
     public static bool EstaJugadorInvalidado(Ficha ficha)
     {
-        return jugadoresInvalidados.ContainsKey((ficha.PosX, ficha.PosY));
+        if(jugadoresInvalidados.ContainsKey(ficha))
+        {
+            return jugadoresInvalidados[ficha]>0;
+        }
+        return false;
     }
 
     public static void ActualizarEstadoInvalidaciones()
+{
+    var jugadoresParaRemover = new List<Ficha>();
+    
+    foreach (var kvp in jugadoresInvalidados)
     {
-        var invalidacionesActualizadas = new Dictionary<(int, int), int>();
-        
-        foreach (var kvp in jugadoresInvalidados)
+        jugadoresInvalidados[kvp.Key] -= 1;
+        if (jugadoresInvalidados[kvp.Key] <= 0)
         {
-            if (kvp.Value > 1)
-                invalidacionesActualizadas[kvp.Key] = kvp.Value - 1;
+            jugadoresParaRemover.Add(kvp.Key);
         }
-        
-        jugadoresInvalidados = invalidacionesActualizadas;
     }
+    
+    foreach (var ficha in jugadoresParaRemover)
+    {
+        jugadoresInvalidados.Remove(ficha);
+    }
+}
 }

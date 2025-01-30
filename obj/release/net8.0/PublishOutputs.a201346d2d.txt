@@ -1,0 +1,5 @@
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\bin\release\net8.0\publish\Projecto Maze runner.exe
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\bin\release\net8.0\publish\Projecto Maze runner.dll
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\bin\release\net8.0\publish\Projecto Maze runner.deps.json
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\bin\release\net8.0\publish\Projecto Maze runner.runtimeconfig.json
+C:\Users\Eros\Documents\Eros\Projecto Maze runner\bin\release\net8.0\publish\Projecto Maze runner.pdb

@@ -1,9 +1,9 @@
-﻿class Program
+﻿public class Program
 {
     static void Main(string[] args)
     {
-        Tablero tablero = new Tablero(8);
-        GestorTurnos gestor = new GestorTurnos(tablero);
-        gestor.IniciarJuego();
+        Console.Title = "Batalla por la Bandera";
+        MenuManager menuManager = new MenuManager();
+        menuManager.MostrarMenu();
     }
 }

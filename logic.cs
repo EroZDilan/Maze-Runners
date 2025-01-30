@@ -73,8 +73,8 @@ using System.Collections.Generic;
                 casillas[punto.x, punto.y].Tipo = TipoCasilla.Vacia;
             }
 
-            // Generar obstáculos (15% del tablero para dar más espacio)
-            int numObstaculos = (int)(Tamaño * Tamaño * 0.15);
+            // Generar obstáculos (20% del tablero para dar más espacio)
+            int numObstaculos = (int)(Tamaño * Tamaño * 0.20);
             if (!GenerarElementosSeguro(TipoCasilla.Obstaculo, numObstaculos))
                 return false;
 
@@ -82,7 +82,7 @@ using System.Collections.Generic;
             int numTrampas = (int)(Tamaño * Tamaño * 0.10);
             if (!GenerarElementosSeguro(TipoCasilla.Trampa1, numTrampas / 3) ||
                 !GenerarElementosSeguro(TipoCasilla.Trampa2, numTrampas / 3) ||
-                !GenerarElementosSeguro(TipoCasilla.Trampa3, numTrampas / 3))
+                !GenerarElementosSeguro(TipoCasilla.Trampa3, numTrampas / 2))
                 return false;
 
             // Verificar accesibilidad desde todos los puntos iniciales
@@ -214,10 +214,10 @@ using System.Collections.Generic;
 {
     private Tablero tablero;
     private List<Ficha> fichas;
-    private int jugadorActual;
+    public int jugadorActual;
     private bool juegoActivo;
-    private Dictionary<Ficha, (int, int)> posicionesIniciales;
-    private int[] contadorTrampas3;
+    public readonly Dictionary<Ficha, (int, int)> posicionesIniciales;
+    public VictoryManager victoryManager;
     private int turnoInvalidado;
 
     public GestorTurnos(Tablero tablero)
@@ -227,47 +227,42 @@ using System.Collections.Generic;
         jugadorActual = 0;
         juegoActivo = true;
         posicionesIniciales = new Dictionary<Ficha, (int, int)>();
-        contadorTrampas3 = new int[2]; // Contador de trampas nivel 3 para cada jugador
+        victoryManager = new VictoryManager(tablero);
         turnoInvalidado = -1; 
-        InicializarFichas();
+        var selector = new SelectorPersonajes();
+        fichas = selector.SeleccionarPersonajes();
+
+        InicializarPosiciones();
     }
 
-    private void InicializarFichas()
+    private void InicializarPosiciones()
     {
-        // Crear fichas con diferentes características
-        fichas.Add(new Guerrero());
-        fichas.Add(new Arquero());
-        // fichas.Add(new Picaro());
-        // fichas.Add(new Sacerdote());
-        // fichas.Add(new CaballeroDeLaMuerte());
-
-        // Asignar posiciones iniciales
         for (int i = 0; i < fichas.Count; i++)
         {
-            if (i % 2 == 0)
+            if(i % 2 == 0)
             {
                 fichas[i].PosX = 0;
                 fichas[i].PosY = 0;
-                posicionesIniciales[fichas[i]] = (0, 0);
+                posicionesIniciales[fichas[i]] = (0,0);
+
             }
+
             else
             {
-                fichas[i].PosX = tablero.Tamaño - 1;
-                fichas[i].PosY = tablero.Tamaño - 1;
-                posicionesIniciales[fichas[i]] = (tablero.Tamaño - 1, tablero.Tamaño - 1);
+                fichas[i].PosX = tablero.Tamaño -1;
+                fichas[i].PosY = tablero.Tamaño -1;
+                posicionesIniciales[fichas[i]]=(tablero.Tamaño -1, tablero.Tamaño-1);
             }
             tablero.ObtenerCasilla(fichas[i].PosX, fichas[i].PosY).EstaOcupada = true;
         }
     }
-
-    
 
     public void IniciarJuego()
     {
         while (juegoActivo)
         {
             EjecutarTurno();
-            VerificarVictoria();
+            //VerificarVictoria();
         }
     }
 
@@ -284,6 +279,7 @@ using System.Collections.Generic;
             Console.WriteLine($"\n{fichaActual.Nombre} está invalidado este turno debido a una trampa!");
             Console.ReadKey(true);
             FinalizarTurno();
+            System.Console.WriteLine("aveadaddadadada");
             return;
         }
 
@@ -310,7 +306,13 @@ using System.Collections.Generic;
                     {
                         movimientosRestantes--;
                         // Verificar trampa después del movimiento
-                        VerificarYActivarTrampa(fichaActual);
+                        //VerificarYActivarTrampa(fichaActual);
+                        Casilla casillaActual = tablero.ObtenerCasilla(fichaActual.PosX, fichaActual.PosY);
+                        if(!(casillaActual.Tipo is TipoCasilla.Vacia))
+                        {
+                            TrampaManager.ManejarTrampa(fichaActual,casillaActual,tablero, this);
+                            if(TrampaManager.EstaJugadorInvalidado(fichaActual))FinalizarTurno();
+                        }
                     }
                     break;
 
@@ -345,62 +347,11 @@ using System.Collections.Generic;
             Console.ReadKey(true);
         }
 
+        VerificarVictoria();
+
         FinalizarTurno();
     }
 
-    private void VerificarYActivarTrampa(Ficha ficha)
-    {
-        Casilla casillaActual = tablero.ObtenerCasilla(ficha.PosX, ficha.PosY);
-        int jugadorIndex = jugadorActual % 2; // Convertir a índice 0 o 1
-
-        switch (casillaActual.Tipo)
-        {
-            case TipoCasilla.Trampa1:
-                turnoInvalidado = jugadorIndex;
-                Console.WriteLine($"{ficha.Nombre} ha caído en una trampa de nivel 1. ¡Pierde el siguiente turno!");
-                casillaActual.Tipo = TipoCasilla.Vacia;
-                break;
-
-            case TipoCasilla.Trampa2:
-                // Volver al inicio
-                tablero.ObtenerCasilla(ficha.PosX, ficha.PosY).EstaOcupada = false;
-                var posInicial = posicionesIniciales[ficha];
-                ficha.PosX = posInicial.Item1;
-                ficha.PosY = posInicial.Item2;
-                tablero.ObtenerCasilla(ficha.PosX, ficha.PosY).EstaOcupada = true;
-                Console.WriteLine($"{ficha.Nombre} ha caído en una trampa de nivel 2. ¡Regresa al inicio!");
-                casillaActual.Tipo = TipoCasilla.Vacia;
-                break;
-
-            case TipoCasilla.Trampa3:
-                // Buscar otra trampa nivel 3
-                List<(int x, int y)> trampasTipo3 = new List<(int x, int y)>();
-                for (int i = 0; i < tablero.Tamaño; i++)
-                {
-                    for (int j = 0; j < tablero.Tamaño; j++)
-                    {
-                        if (tablero.ObtenerCasilla(i, j).Tipo == TipoCasilla.Trampa3 &&
-                            (i != ficha.PosX || j != ficha.PosY))
-                        {
-                            trampasTipo3.Add((i, j));
-                        }
-                    }
-                }
-
-                if (trampasTipo3.Count > 0)
-                {
-                    Random random = new Random();
-                    var destino = trampasTipo3[random.Next(trampasTipo3.Count)];
-                    tablero.ObtenerCasilla(ficha.PosX, ficha.PosY).EstaOcupada = false;
-                    ficha.PosX = destino.x;
-                    ficha.PosY = destino.y;
-                    tablero.ObtenerCasilla(ficha.PosX, ficha.PosY).EstaOcupada = true;
-                    contadorTrampas3[jugadorIndex]++;
-                    Console.WriteLine($"{ficha.Nombre} ha caído en una trampa de nivel 3. ¡Se teletransporta a otra trampa!");
-                }
-                break;
-        }
-    }
 
     private bool RealizarMovimiento(Ficha ficha, ConsoleKey direccion)
     {
@@ -429,47 +380,38 @@ using System.Collections.Generic;
             ficha.PosX = newX;
             ficha.PosY = newY;
             tablero.ObtenerCasilla(newX, newY).EstaOcupada = true;
+
+            if(victoryManager.IntentarCapturarBandera(ficha,fichas))
+            {
+                Console.WriteLine("\nPresiona cualquier tecla para continuar...");
+            Console.ReadKey(true);
+            }
+            
+            Casilla casillaActual = tablero.ObtenerCasilla(ficha.PosX, ficha.PosY);
+            if(!(casillaActual.Tipo is TipoCasilla.Vacia))
+            {
+                int resultado = TrampaManager.ManejarTrampa(ficha,casillaActual,tablero,this);
+                if(resultado == 0) return false;
+            }
+
             return true;
         }
 
         return false;
     }
 
+    public void FinalizarTurnoInmediato()
+    {
+        if(fichas[jugadorActual].EnfriamientoRestante>0)fichas[jugadorActual].EnfriamientoRestante--;
+
+        TrampaManager.ActualizarEstadoInvalidaciones();
+        jugadorActual = (jugadorActual + 1)%fichas.Count;
+    }
+
     private void VerificarVictoria()
     {
-        Ficha fichaActual = fichas[jugadorActual];
-        
-        // Verificar victoria por llegar a la base enemiga
-        var posicionInicial = posicionesIniciales[fichaActual];
-        var posicionObjetivo = posicionInicial.Item1 == 0 ? 
-            (tablero.Tamaño - 1, tablero.Tamaño - 1) : (0, 0);
-
-        if (fichaActual.PosX == posicionObjetivo.Item1 && 
-            fichaActual.PosY == posicionObjetivo.Item2)
+        if(victoryManager.VerificarVictoria(fichas[jugadorActual],posicionesIniciales))
         {
-            Console.Clear();
-            Console.WriteLine($"¡{fichaActual.Nombre} ha ganado por capturar la base enemiga!");
-            juegoActivo = false;
-            return;
-        }
-
-        // Victoria por caer en 3 trampas nivel 3
-        if (contadorTrampas3[jugadorActual] >= 3)
-        {
-            Console.Clear();
-            Console.WriteLine($"¡{fichaActual.Nombre} ha perdido por caer en demasiadas trampas nivel 3!");
-            Console.WriteLine($"¡El jugador {(jugadorActual + 1) % 2} es el ganador!");
-            juegoActivo = false;
-            return;
-        }
-
-        // Victoria por dominación de territorio
-        int casillasControladas = ContarCasillasControladas(fichaActual);
-        int casillasLibresTotales = ContarCasillasLibres();
-        if (casillasControladas >= casillasLibresTotales * 0.7)
-        {
-            Console.Clear();
-            Console.WriteLine($"¡{fichaActual.Nombre} ha ganado por dominación de territorio!");
             juegoActivo = false;
             return;
         }
@@ -572,6 +514,8 @@ using System.Collections.Generic;
                 }
             }
         }
+        
+        victoryManager.DibujarBandera(visualizacion);
 
         // Agregar las fichas
         foreach (var ficha in fichas)
@@ -599,10 +543,5 @@ using System.Collections.Generic;
                             $"- Enfriamiento: {ficha.EnfriamientoRestante}" +
                             estadoInvalidacion);
         }
-
-        // Mostrar contadores de trampas nivel 3
-        Console.WriteLine("\nTrampas nivel 3:");
-        Console.WriteLine($"Jugador 1: {contadorTrampas3[0]}/3");
-        Console.WriteLine($"Jugador 2: {contadorTrampas3[1]}/3");
     }
 }
